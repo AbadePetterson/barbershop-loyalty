@@ -62,7 +62,7 @@ class WhatsAppController extends Controller
 
         $response = $this->barberService->processMessage($body, $from);
 
-        Http::post('http://host.docker.internal:3000/send-message', [
+        Http::post('http://node-bot:3000/send-message', [
             'number' => $from,
             'message' => $response,
         ]);
