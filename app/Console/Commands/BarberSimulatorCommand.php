@@ -40,7 +40,7 @@ class BarberSimulatorCommand extends Command
 
             $response = $this->barberService->processMessage($message);
             $this->line('');
-            $this->info("🤖 Bot: {$response}");
+            $this->info("{$response}");
             $this->line('');
         }
     }

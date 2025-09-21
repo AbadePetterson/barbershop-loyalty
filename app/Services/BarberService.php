@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Repositories\ClientRepository;
 use App\Models\Client;
-use Illuminate\Support\Facades\Cache; // ← ADICIONAR
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class BarberService
@@ -13,8 +13,6 @@ class BarberService
         private ClientRepository $clientRepository
     ) {}
 
-    // TODOS OS SEUS MÉTODOS EXISTENTES PERMANECEM IGUAIS:
-    // getMenu(), listClients(), addCut(), useFreeCut(), registerClient(), getClientDetails(), getStats()
 
     public function getMenu(): string
     {
@@ -97,7 +95,6 @@ class BarberService
 
     public function registerClient(string $name, string $phone): string
     {
-        // Verificar se já existe
         $existingClient = $this->clientRepository->findByPhone($phone);
         if ($existingClient) {
             return "❌ Já existe um cliente com este telefone: {$existingClient->name}";
@@ -137,10 +134,8 @@ class BarberService
         return $message;
     }
 
-    // MODIFICAR APENAS ESTE MÉTODO - adicionar parâmetro $userPhone
     public function processMessage(string $message, string $userPhone = '11999999999'): string
     {
-        // ← ADICIONAR: Verificar se está em fluxo step-by-step
         $sessionKey = "barber_session_{$userPhone}";
         $session = Cache::get($sessionKey, ['state' => 'idle', 'data' => []]);
 
@@ -148,26 +143,21 @@ class BarberService
             return $this->handleStepByStep($message, $session, $sessionKey);
         }
 
-        // ← SUA LÓGICA EXISTENTE CONTINUA IGUAL (só mover para método separado)
         return $this->handleNormalMessage($message, $sessionKey);
     }
 
-    // ← NOVO: Sua lógica atual movida para cá
     private function handleNormalMessage(string $message, string $sessionKey): string
     {
         $message = strtolower(trim($message));
 
-        // Menu principal
         if ($message === 'menu' || $message === '/start') {
             return $this->getMenu();
         }
 
-        // Listar clientes
         if ($message === '1' || str_contains($message, 'listar')) {
             return $this->listClients();
         }
 
-        // Adicionar corte
         if (str_contains($message, '+1') || $message === '2') {
             if ($message === '2') {
                 return "Digite o nome do cliente para adicionar um corte:\nExemplo: joão +1";
@@ -179,7 +169,6 @@ class BarberService
             return $this->addCut($clientName);
         }
 
-        // Usar corte grátis
         if (str_contains($message, '-1') || $message === '3') {
             if ($message === '3') {
                 return "Digite o nome do cliente para usar corte grátis:\nExemplo: joão -1";
@@ -191,14 +180,11 @@ class BarberService
             return $this->useFreeCut($clientName);
         }
 
-        // ← MODIFICAR: Cadastrar cliente - agora inicia step-by-step
         if ($message === '4' || str_contains($message, 'cadastrar')) {
-            // Se começar com "cadastrar", tentar parsing primeiro
             if (str_starts_with($message, 'cadastrar ')) {
                 return $this->handleCadastrarCommand($message);
             }
 
-            // Senão, iniciar step-by-step
             Cache::put($sessionKey, ['state' => 'waiting_name', 'data' => []], 3600);
 
             return "📝 *CADASTRAR CLIENTE* - Passo 1/3\n\n" .
@@ -207,7 +193,6 @@ class BarberService
                 "❌ Digite 'cancelar' para sair";
         }
 
-        // Ver detalhes de cliente
         if (str_starts_with($message, 'cliente ')) {
             $clientName = trim(str_replace('cliente ', '', $message));
             return $this->getClientDetails($clientName);
@@ -216,7 +201,6 @@ class BarberService
         return "Comando não reconhecido! Digite 'menu' para ver as opções disponíveis.";
     }
 
-    // ← NOVO: Manter compatibilidade com formato antigo
     private function handleCadastrarCommand(string $message): string
     {
         $parts = explode(' ', $message);
@@ -232,7 +216,6 @@ class BarberService
         return $this->registerClient($name, $phone);
     }
 
-    // ← NOVO: Gerenciar fluxo step-by-step
     private function handleStepByStep(string $message, array $session, string $sessionKey): string
     {
         return match($session['state']) {
@@ -243,7 +226,6 @@ class BarberService
         };
     }
 
-    // ← NOVO: Aguardar nome
     private function handleWaitingName(string $message, string $sessionKey): string
     {
         $message = trim($message);
@@ -257,7 +239,6 @@ class BarberService
             return "⚠️ Nome muito curto!\n\n👤 Digite o nome completo:";
         }
 
-        // Verificar se já existe
         $existingClient = $this->clientRepository->findByName($message);
         if ($existingClient) {
             Cache::forget($sessionKey);
@@ -279,7 +260,6 @@ class BarberService
             "❌ 'cancelar' para sair";
     }
 
-    // ← NOVO: Aguardar telefone
     private function handleWaitingPhone(string $message, array $session, string $sessionKey): string
     {
         $message = trim($message);
@@ -300,7 +280,6 @@ class BarberService
             return "⚠️ Telefone inválido!\n\n📱 Digite novamente:";
         }
 
-        // Verificar duplicata
         $existingClient = $this->clientRepository->findByPhone($cleanPhone);
         if ($existingClient) {
             Cache::forget($sessionKey);
@@ -326,7 +305,6 @@ class BarberService
             "❌ 'cancelar' para sair";
     }
 
-    // ← NOVO: Confirmar cadastro
     private function handleConfirmClient(string $message, array $session, string $sessionKey): string
     {
         $message = strtolower(trim($message));

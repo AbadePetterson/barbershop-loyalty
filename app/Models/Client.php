@@ -15,10 +15,9 @@ class Client extends Model
     {
         $this->increment('cuts_count');
 
-        // A cada 10 cortes, ganha 1 grátis
         if ($this->cuts_count % 10 == 0) {
             $this->increment('free_cuts_earned');
-            return true; // Ganhou corte grátis
+            return true;
         }
 
         return false;

@@ -8,6 +8,7 @@ use App\Services\BarberService;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 
 class WhatsAppController extends Controller
 {
@@ -52,5 +53,20 @@ class WhatsAppController extends Controller
     {
         $stats = $this->barberService->getStats();
         return SuccessResource::toJson($stats, 'Stats retrieved successfully');
+    }
+
+    public function webhook(Request $request)
+    {
+        $from = $request->input('from');
+        $body = $request->input('body');
+
+        $response = $this->barberService->processMessage($body, $from);
+
+        Http::post('http://host.docker.internal:3000/send-message', [
+            'number' => $from,
+            'message' => $response,
+        ]);
+
+        return response()->json(['status' => 'ok']);
     }
 }
